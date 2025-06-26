@@ -1,112 +1,62 @@
-from telegram import Update
-from telegram.ext import Updater, CommandHandler, CallbackContext
-import requests
 import os
-import json
-from datetime import time as dtime
-import random
-from load_env import load_dotenv
+import logging
+from telegram import Update
+from telegram.ext import (
+    ApplicationBuilder, ContextTypes, CommandHandler,
+    MessageHandler, filters
+)
+from telegram.ext.webhook import WebhookServer
+import requests
 
-load_dotenv()
+# Load environment variables
+BOT_TOKEN = os.getenv("7949461968:AAHRt77aCJ_5xBAckfK1LWDw8JZ4sU7Jam8")
+API_URL = os.getenv("API_URL", "https://dummy-url.com")
+WEBHOOK_URL = os.getenv("https://lassiex-telegram-bot-1i6z.onrender.com/webhook")
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-API_URL = os.getenv("API_URL", "https://lassiex-backend.up.railway.app/predict")
-SUBSCRIBERS_FILE = "subscribers.json"
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-LASSIEX_MESSAGES = [
-    "🐶 LassieX sniffs out rugs before you get rekt!",
-    "📉 Meme coins go down, but LassieX sees it coming.",
-    "🚨 AI BUY SIGNAL ACTIVE — powered by loyalty.",
-    "💡 Smarter trading starts with LassieX.ai",
-    "🤖 $LASSIE: Not just a meme. An intelligent companion.",
-    "🔎 Lassie is scanning... Alpha incoming!"
-]
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Welcome to the LassieX Bot! Sniffing alpha in real-time!")
 
-def load_subscribers():
-    if not os.path.exists(SUBSCRIBERS_FILE):
-        return {}
-    with open(SUBSCRIBERS_FILE, "r") as f:
-        return json.load(f)
-
-def save_subscribers(subs):
-    with open(SUBSCRIBERS_FILE, "w") as f:
-        json.dump(subs, f)
-
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        "🐕 Welcome to LassieX Bot!\n"
-        "Type /predict BTC to get the latest AI crypto insight.\n"
-        "Use /subscribe BTC to get daily updates.\n"
-        "Use /unsubscribe to stop them."
-    )
-
-def predict(update: Update, context: CallbackContext):
-    if not context.args:
-        update.message.reply_text("Please provide a coin symbol. Example: /predict BTC")
-        return
-
-    symbol = context.args[0].upper() + "-USD"
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_message = update.message.text
     try:
-        response = requests.post(API_URL, json={"symbol": symbol, "days_back": 7})
-        data = response.json()
-        msg = (
-            f"📊 *{data['symbol']} Prediction:*\n"
-            f"🔹 Price: ${data['latest_price']}\n"
-            f"📈 Trend: {data['trend_prediction']}\n"
-            f"🧠 Sentiment: {data['social_sentiment']}\n"
-            f"💬 Tweets analyzed: {data['tweet_sample_size']}"
-        )
-        update.message.reply_text(msg, parse_mode="Markdown")
+        if API_URL and "dummy" not in API_URL:
+            response = requests.post(API_URL, json={"text": user_message}, timeout=5)
+            result = response.json()
+            sentiment = result.get("label", "unknown")
+        else:
+            sentiment = "neutral (mock)"
+
+        await update.message.reply_text(f"Sentiment: {sentiment.capitalize()}")
     except Exception as e:
-        update.message.reply_text(f"⚠️ Error fetching data: {e}")
+        logger.error(f"Error in handle_message: {e}")
+        await update.message.reply_text("Sorry, something went wrong while processing your message.")
 
-def subscribe(update: Update, context: CallbackContext):
-    user_id = str(update.effective_chat.id)
-    symbol = context.args[0].upper() + "-USD" if context.args else "BTC-USD"
-    subs = load_subscribers()
-    subs[user_id] = symbol
-    save_subscribers(subs)
-    update.message.reply_text(f"✅ Subscribed! You'll get daily LassieX updates for {symbol}.")
-
-def unsubscribe(update: Update, context: CallbackContext):
-    user_id = str(update.effective_chat.id)
-    subs = load_subscribers()
-    if user_id in subs:
-        del subs[user_id]
-        save_subscribers(subs)
-        update.message.reply_text("❌ Unsubscribed from daily updates.")
+async def setup_webhook(app):
+    if WEBHOOK_URL:
+        await app.bot.set_webhook(https://lassiex-telegram-bot-1i6z.onrender.com/webhook)
+        logger.info(f"Webhook set to: {https://lassiex-telegram-bot-1i6z.onrender.com/webhook}")
     else:
-        update.message.reply_text("You're not subscribed.")
-
-def send_daily(context: CallbackContext):
-    subs = load_subscribers()
-    for user_id, symbol in subs.items():
-        try:
-            response = requests.post(API_URL, json={"symbol": symbol, "days_back": 7})
-            data = response.json()
-            msg = (
-                f"{random.choice(LASSIEX_MESSAGES)}\n\n"
-                f"📊 Daily Update: {data['symbol']}\n"
-                f"🔹 Price: ${data['latest_price']}\n"
-                f"📈 Trend: {data['trend_prediction']}\n"
-                f"🧠 Sentiment: {data['social_sentiment']}\n"
-                f"💬 Tweets analyzed: {data['tweet_sample_size']}\n\n"
-                f"👉 Join the Pack: https://lassiex.ai"
-            )
-            context.bot.send_message(chat_id=int(user_id), text=msg)
-        except Exception as e:
-            print(f"Error sending to {user_id}: {e}")
+        logger.warning("WEBHOOK_URL is not set. Webhook cannot be configured.")
 
 def main():
-    updater = Updater(BOT_TOKEN, use_context=True)
-    dp = updater.dispatcher
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("predict", predict))
-    dp.add_handler(CommandHandler("subscribe", subscribe))
-    dp.add_handler(CommandHandler("unsubscribe", unsubscribe))
-    updater.job_queue.run_daily(send_daily, time=dtime(hour=9))
-    updater.start_polling()
-    updater.idle()
+    if not BOT_TOKEN:
+        raise RuntimeError("7949461968:AAHRt77aCJ_5xBAckfK1LWDw8JZ4sU7Jam8 environment variable not set.")
+
+    app = ApplicationBuilder().token(7949461968:AAHRt77aCJ_5xBAckfK1LWDw8JZ4sU7Jam8).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=int(os.environ.get("PORT", 10000)),
+        webhook_path="/webhook",
+        on_startup=setup_webhook,
+        stop_signals=None
+    )
 
 if __name__ == "__main__":
     main()
