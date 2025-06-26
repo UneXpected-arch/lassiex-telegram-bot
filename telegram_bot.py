@@ -36,7 +36,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def setup_webhook(app):
     if WEBHOOK_URL:
-        await app.bot.set_webhook(https://lassiex-telegram-bot-1i6z.onrender.com/webhook)
+        await app.bot.set_webhook(os.environ["WEBHOOK_URL"])
         logger.info(f"Webhook set to: {https://lassiex-telegram-bot-1i6z.onrender.com/webhook}")
     else:
         logger.warning("WEBHOOK_URL is not set. Webhook cannot be configured.")
