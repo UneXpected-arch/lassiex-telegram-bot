@@ -7,6 +7,9 @@ from telegram.ext import (
 )
 from telegram.ext.webhook import WebhookServer
 import requests
+import os
+
+app = ApplicationBuilder().token(os.environ["BOT_TOKEN"]).build()
 
 # Load environment variables
 BOT_TOKEN = os.getenv("7949461968:AAHRt77aCJ_5xBAckfK1LWDw8JZ4sU7Jam8")
@@ -45,7 +48,7 @@ def main():
     if not BOT_TOKEN:
         raise RuntimeError("7949461968:AAHRt77aCJ_5xBAckfK1LWDw8JZ4sU7Jam8 environment variable not set.")
 
-    app = ApplicationBuilder().token(7949461968:AAHRt77aCJ_5xBAckfK1LWDw8JZ4sU7Jam8).build()
+    app = ApplicationBuilder().token("7949461968:AAHRt77aCJ_5xBAckfK1LWDw8JZ4sU7Jam8").build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
