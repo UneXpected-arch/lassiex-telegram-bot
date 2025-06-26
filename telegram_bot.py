@@ -1,36 +1,62 @@
 import os
+import logging
 from telegram import Update
 from telegram.ext import (
-    ApplicationBuilder, CommandHandler, ContextTypes
+    ApplicationBuilder, ContextTypes, CommandHandler,
+    MessageHandler, filters
 )
-from flask import Flask, request
+from telegram.ext.webhook import WebhookServer
+import requests
 
-# Telegram bot token and webhook domain from environment
-7949461968:AAHRt77aCJ_5xBAckfK1LWDw8JZ4sU7Jam8 = os.getenv("7949461968:AAHRt77aCJ_5xBAckfK1LWDw8JZ4sU7Jam8")
-https://lassiex-telegram-bot-1i6z.onrender.com = os.getenv("https://lassiex-telegram-bot-1i6z.onrender.com")  # e.g. https://your-app.onrender.com
+# Load environment variables
+BOT_TOKEN = os.getenv("7949461968:AAHRt77aCJ_5xBAckfK1LWDw8JZ4sU7Jam8")
+API_URL = os.getenv("API_URL", "https://dummy-url.com")
+WEBHOOK_URL = os.getenv("https://lassiex-telegram-bot-1i6z.onrender.com/webhook")
 
-# Create Flask app
-flask_app = Flask(__name__)
-telegram_app = ApplicationBuilder().token(7949461968:AAHRt77aCJ_5xBAckfK1LWDw8JZ4sU7Jam8).build()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# /start command handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Welcome to LassieX — sniffing alpha in real-time!")
+    await update.message.reply_text("Welcome to the LassieX Bot! Sniffing alpha in real-time!")
 
-telegram_app.add_handler(CommandHandler("start", start))
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_message = update.message.text
+    try:
+        if API_URL and "dummy" not in API_URL:
+            response = requests.post(API_URL, json={"text": user_message}, timeout=5)
+            result = response.json()
+            sentiment = result.get("label", "unknown")
+        else:
+            sentiment = "neutral (mock)"
 
-# Flask route for Telegram webhook
-@flask_app.post("/webhook")
-async def webhook():
-    if request.method == "POST":
-        await telegram_app.update_queue.put(Update.de_json(request.json, telegram_app.bot))
-        return "OK"
+        await update.message.reply_text(f"Sentiment: {sentiment.capitalize()}")
+    except Exception as e:
+        logger.error(f"Error in handle_message: {e}")
+        await update.message.reply_text("Sorry, something went wrong while processing your message.")
 
-# Set webhook on startup
-@flask_app.before_first_request
-def set_webhook():
-    webhook_url = f"{https://lassiex-telegram-bot-1i6z.onrender.com}/webhook"
-    telegram_app.bot.set_webhook(url=webhook_url)
+async def setup_webhook(app):
+    if WEBHOOK_URL:
+        await app.bot.set_webhook(https://lassiex-telegram-bot-1i6z.onrender.com/webhook)
+        logger.info(f"Webhook set to: {https://lassiex-telegram-bot-1i6z.onrender.com/webhook}")
+    else:
+        logger.warning("WEBHOOK_URL is not set. Webhook cannot be configured.")
+
+def main():
+    if not BOT_TOKEN:
+        raise RuntimeError("7949461968:AAHRt77aCJ_5xBAckfK1LWDw8JZ4sU7Jam8 environment variable not set.")
+
+    app = ApplicationBuilder().token(7949461968:AAHRt77aCJ_5xBAckfK1LWDw8JZ4sU7Jam8).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=int(os.environ.get("PORT", 10000)),
+        webhook_path="/webhook",
+        on_startup=setup_webhook,
+        stop_signals=None
+    )
 
 if __name__ == "__main__":
-    flask_app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    main()
