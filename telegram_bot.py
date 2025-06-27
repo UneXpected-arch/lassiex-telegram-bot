@@ -111,10 +111,11 @@ async def main():
     await app.run_webhook(listen="0.0.0.0", port=int(os.getenv("PORT", 10000)), webhook_url=WEBHOOK_URL)
 
 if __name__ == "__main__":
-    import nest_asyncio
-    nest_asyncio.apply()
-    asyncio.get_event_loop().run_until_complete(main())
+    import asyncio
+    asyncio.run(main())
     except RuntimeError as e:
+        import sys
+        print(f"RuntimeError: {e}", file=sys.stderr)
         if "event loop is already running" in str(e):
             nest_asyncio.apply()
             asyncio.get_event_loop().run_until_complete(main())
