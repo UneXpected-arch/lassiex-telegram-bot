@@ -50,18 +50,33 @@ async def detect_volume_spikes():
     url = f"{COINGECKO_API}/coins/markets?vs_currency=usd&order=volume_desc&per_page=50&page=1"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
-            coins = await resp.json()
+            try:
+                coins = await resp.json()
+            except Exception as e:
+                return [f"Error parsing CoinGecko response: {e}"]
+
+            if isinstance(coins, dict) and "error" in coins:
+                return [f"CoinGecko error: {coins['error']}"]
+
             for coin in coins:
+                if not isinstance(coin, dict) or "id" not in coin:
+                    continue
+
                 coin_id = coin["id"]
                 try:
                     hist_url = f"{COINGECKO_API}/coins/{coin_id}/market_chart?vs_currency=usd&days=7"
                     async with session.get(hist_url) as hist_resp:
                         hist_data = await hist_resp.json()
-                        volumes = [v[1] for v in hist_data["total_volumes"]]
+                        volumes = [v[1] for v in hist_data.get("total_volumes", [])]
+                        if not volumes:
+                            continue
+
                         avg_vol = sum(volumes) / len(volumes)
-                        if coin["total_volume"] > avg_vol * VOLUME_SPIKE_THRESHOLD:
-                            spikes.append(f"🚨 {coin['name']} ({coin['symbol'].upper()}) - 24h Vol: ${coin['total_volume']:,.0f}")
-                except Exception as e:
+                        if coin.get("total_volume", 0) > avg_vol * VOLUME_SPIKE_THRESHOLD:
+                            spikes.append(
+                                f"🚨 {coin['name']} ({coin['symbol'].upper()}) - 24h Vol: ${coin['total_volume']:,.0f}"
+                            )
+                except Exception:
                     continue
     return spikes
 
@@ -107,12 +122,6 @@ async def volume_spike_alert_job(app):
         await app.bot.send_message(chat_id=CHANNEL_ID, text="\n".join(["📡 Volume Spike Alert"] + spikes))
 
 # --- Webhook Entry Point ---
-async def volume_spike_alert_job(app):
-    spikes = await detect_volume_spikes()
-    if spikes:
-        await app.bot.send_message(chat_id=CHANNEL_ID, text="\n".join(["📡 Volume Spike Alert"] + spikes))
-
-# --- Webhook Entry Point ---
 async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -134,7 +143,5 @@ if __name__ == "__main__":
     import nest_asyncio
     nest_asyncio.apply()
 
-    import asyncio
-    asyncio.get_event_loop().run_until_complete(main())
     import asyncio
     asyncio.get_event_loop().run_until_complete(main())
