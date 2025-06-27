@@ -100,10 +100,33 @@ async def search_x_for_gems():
 
 # --- Telegram Command: /gem ---
 async def gem(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    gems = await search_x_for_gems()
-    spikes = await detect_volume_spikes()
-    message = "\n".join(gems + (["\n📈 Volume Spikes:"] + spikes if spikes else []))
-    await update.message.reply_text(message or "No gems found right now.")
+    try:
+        await update.message.reply_text("🔍 Scanning X.com for gem tokens...")
+
+        print("🧪 /gem triggered")
+
+        gems = await search_x_for_gems()
+        print(f"🪙 Gems found: {gems}")
+
+        spikes = await detect_volume_spikes()
+        print(f"📈 Volume spikes found: {spikes}")
+
+        if not gems and not spikes:
+            await update.message.reply_text("🤷 No promising tokens found right now. Try again later.")
+            return
+
+        message_parts = []
+        if gems:
+            message_parts.append("🔥 Gem Candidates from X.com:\n" + "\n".join(gems))
+        if spikes:
+            message_parts.append("\n📈 Volume Spikes:\n" + "\n".join(spikes))
+
+        await update.message.reply_text("\n\n".join(message_parts))
+
+    except Exception as e:
+        error_msg = f"⚠️ Error during /gem:\n{e}"
+        print(error_msg)
+        await update.message.reply_text(error_msg)
 
 # --- Telegram Command: /alerts ---
 async def alerts(update: Update, context: ContextTypes.DEFAULT_TYPE):
