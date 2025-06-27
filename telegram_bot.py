@@ -10,9 +10,9 @@ from datetime import datetime, timedelta
 import aiohttp
 import nest_asyncio
 from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
-)
+from telegram.ext import ApplicationBuilder
+
+app = ApplicationBuilder().token(BOT_TOKEN).build()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
