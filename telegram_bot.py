@@ -14,6 +14,8 @@ from telegram.ext import ApplicationBuilder
 
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
+import os
+
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 TWITTER_BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
