@@ -10,12 +10,11 @@ from datetime import datetime, timedelta
 import aiohttp
 import nest_asyncio
 from telegram import Update
-from telegram.ext import ApplicationBuilder
+from telegram.ext import (
+    ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
+)
 
-app = ApplicationBuilder().token(BOT_TOKEN).build()
-
-import os
-
+# ✅ Load environment variables BEFORE using them
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 TWITTER_BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
@@ -23,6 +22,15 @@ COINGECKO_API = os.getenv("COINGECKO_API", "https://api.coingecko.com/api/v3")
 DEXTOOLS_BASE = os.getenv("DEXTOOLS_BASE", "https://www.dextools.io")
 CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID")
 VOLUME_SPIKE_THRESHOLD = float(os.getenv("VOLUME_SPIKE_THRESHOLD", 2.5))
+
+# 🔁 Fix for nested async issues (Render requires this)
+nest_asyncio.apply()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("LassieX")
+
+# ✅ Ensure ApplicationBuilder comes AFTER the env variables
+app = ApplicationBuilder().token(BOT_TOKEN).build()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("LassieX")
