@@ -83,21 +83,34 @@ async def detect_volume_spikes():
 # --- Feature: Scrape X.com for /gem command ---
 async def search_x_for_gems():
     query = "(%23100x OR %23gem OR %23microcap OR %23degen) lang:en"
-    headers = {
-    "Authorization": "Bearer AAAAAAAAAAAAAAAAAAAAABEI2wEAAAAAP1ersynLrbNe9QABUXFAfqdGK6k%3DkKTkpWPVqDUsfMrnFFjOZL8s7dqFIFTE3fBGH2Jxuytl7cecvy"
-}
-    url = f"https://api.twitter.com/2/tweets/search/recent?query={query}&tweet.fields=public_metrics&max_results=50"
+    headers = {"Authorization": f"Bearer {AAAAAAAAAAAAAAAAAAAAABEI2wEAAAAAP1ersynLrbNe9QABUXFAfqdGK6k%3DkKTkpWPVqDUsfMrnFFjOZL8s7dqFIFTE3fBGH2Jxuytl7cecvy}"}
+    url = f"https://api.twitter.com/2/tweets/search/recent?query={query}&tweet.fields=public_metrics,author_id&expansions=author_id&user.fields=username&max_results=50"
+
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as resp:
-            tweets = (await resp.json()).get("data", [])
+            result = await resp.json()
+            tweets = result.get("data", [])
+            users = {u["id"]: u["username"] for u in result.get("includes", {}).get("users", [])}
+
             gems = []
             for tweet in tweets:
                 text = tweet["text"]
-                if re.search(r"\\$[A-Z]{2,10}", text):
-                    symbol = re.findall(r"\\$[A-Z]{2,10}", text)[0]
-                    engagement = tweet["public_metrics"]
-                    if engagement["retweet_count"] + engagement["like_count"] > 30:
-                        gems.append(f"🔥 {symbol} - {text[:80]}...")
+                metrics = tweet["public_metrics"]
+                username = users.get(tweet["author_id"], "unknown")
+
+                engagement = metrics["like_count"] + metrics["retweet_count"]
+                if engagement < 30:
+                    continue
+
+                symbols = re.findall(r"\$[A-Z]{2,10}", text)
+                cas = re.findall(r"0x[a-fA-F0-9]{40}", text)
+                tweet_url = f"https://x.com/{username}/status/{tweet['id']}"
+
+                if symbols:
+                    sym = symbols[0]
+                    ca_part = f"\nCA: `{cas[0]}`" if cas else ""
+                    gems.append(f"🔥 {sym} — {text[:80]}...\n🔗 [Tweet]({tweet_url}){ca_part}")
+
             return gems[:5]
 
 # --- Telegram Command: /gem ---
