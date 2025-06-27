@@ -3,5 +3,5 @@ python-dotenv
 aiohttp
 beautifulsoup4
 apscheduler
-pip install nest_asyncio
+nest_asyncio
 
