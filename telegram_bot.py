@@ -4,6 +4,8 @@ import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import aiohttp
+from dotenv import load_dotenv
+load_dotenv()
 
 # Load from environment
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
