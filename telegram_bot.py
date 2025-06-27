@@ -83,7 +83,7 @@ async def detect_volume_spikes():
 # --- Feature: Scrape X.com for /gem command ---
 async def search_x_for_gems():
     query = "(%23100x OR %23gem OR %23microcap OR %23degen) lang:en"
-    headers = {"Authorization": f"Bearer {TWITTER_BEARER_TOKEN}"}
+    headers = {"Authorization": f"Bearer {AAAAAAAAAAAAAAAAAAAAABEI2wEAAAAAP1ersynLrbNe9QABUXFAfqdGK6k%3DkKTkpWPVqDUsfMrnFFjOZL8s7dqFIFTE3fBGH2Jxuytl7cecvy}"}
     url = f"https://api.twitter.com/2/tweets/search/recent?query={query}&tweet.fields=public_metrics&max_results=50"
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as resp:
