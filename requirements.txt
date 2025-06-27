@@ -1,5 +1,6 @@
 python-telegram-bot[webhooks]==20.7
 python-dotenv
+httpx
 aiohttp
 beautifulsoup4
 apscheduler
