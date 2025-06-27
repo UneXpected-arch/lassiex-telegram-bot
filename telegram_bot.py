@@ -8,6 +8,7 @@ import asyncio
 from datetime import datetime, timedelta
 
 import aiohttp
+import nest_asyncio
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
@@ -65,8 +66,8 @@ async def search_x_for_gems():
             gems = []
             for tweet in tweets:
                 text = tweet["text"]
-                if re.search(r"\$[A-Z]{2,10}", text):
-                    symbol = re.findall(r"\$[A-Z]{2,10}", text)[0]
+                if re.search(r"\\$[A-Z]{2,10}", text):
+                    symbol = re.findall(r"\\$[A-Z]{2,10}", text)[0]
                     engagement = tweet["public_metrics"]
                     if engagement["retweet_count"] + engagement["like_count"] > 30:
                         gems.append(f"🔥 {symbol} - {text[:80]}...")
@@ -76,7 +77,7 @@ async def search_x_for_gems():
 async def gem(update: Update, context: ContextTypes.DEFAULT_TYPE):
     gems = await search_x_for_gems()
     spikes = await detect_volume_spikes()
-    message = "\n".join(gems + ["\n📈 Volume Spikes:"] + spikes if spikes else [])
+    message = "\n".join(gems + (["\n📈 Volume Spikes:"] + spikes if spikes else []))
     await update.message.reply_text(message or "No gems found right now.")
 
 # --- Telegram Command: /alerts ---
@@ -110,4 +111,11 @@ async def main():
     await app.run_webhook(listen="0.0.0.0", port=int(os.getenv("PORT", 10000)), webhook_url=WEBHOOK_URL)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except RuntimeError as e:
+        if "event loop is already running" in str(e):
+            nest_asyncio.apply()
+            asyncio.get_event_loop().run_until_complete(main())
+        else:
+            raise
