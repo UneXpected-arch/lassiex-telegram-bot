@@ -107,15 +107,19 @@ async def main():
     job_queue = app.job_queue
     job_queue.run_repeating(lambda ctx: volume_spike_alert_job(app), interval=600, first=10)
 
+    # Set webhook URL
     await app.bot.set_webhook(WEBHOOK_URL)
-    await app.run_webhook(listen="0.0.0.0", port=int(os.getenv("PORT", 10000)), webhook_url=WEBHOOK_URL)
+
+    # Start webhook server
+    await app.run_webhook(
+        listen="0.0.0.0",
+        port=int(os.getenv("PORT", 10000)),
+        webhook_url=WEBHOOK_URL
+    )
 
 if __name__ == "__main__":
-    import asyncio
+    import nest_asyncio
+    nest_asyncio.apply()
 
-    try:
-        asyncio.run(main())
-    except RuntimeError as e:
-        import nest_asyncio
-        nest_asyncio.apply()
-        asyncio.get_event_loop().run_until_complete(main())
+    import asyncio
+    asyncio.get_event_loop().run_until_complete(main())
