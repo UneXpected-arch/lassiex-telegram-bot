@@ -1,2 +1,6 @@
-python-telegram-bot==20.7
-requests
+python-telegram-bot>=20
+python-dotenv
+aiohttp
+beautifulsoup4
+apscheduler
+nest_asyncio
