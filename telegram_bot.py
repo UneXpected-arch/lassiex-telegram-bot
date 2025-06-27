@@ -162,9 +162,9 @@ async def main():
         webhook_url=WEBHOOK_URL
     )
 
-if __name__ == "__main__":
-    import nest_asyncio
-    nest_asyncio.apply()
+import nest_asyncio
+nest_asyncio.apply()
 
-    import asyncio
-    asyncio.get_event_loop().run_until_complete(main())
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
