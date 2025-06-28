@@ -14,7 +14,7 @@ from telegram.ext import (
     ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 )
 
-# ✅ Load environment variables BEFORE using them
+# Load environment variables
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 TWITTER_BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
@@ -23,15 +23,7 @@ DEXTOOLS_BASE = os.getenv("DEXTOOLS_BASE", "https://www.dextools.io")
 CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID")
 VOLUME_SPIKE_THRESHOLD = float(os.getenv("VOLUME_SPIKE_THRESHOLD", 2.5))
 
-# 🔁 Fix for nested async issues (Render requires this)
 nest_asyncio.apply()
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("LassieX")
-
-# ✅ Ensure ApplicationBuilder comes AFTER the env variables
-app = ApplicationBuilder().token(BOT_TOKEN).build()
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("LassieX")
 
@@ -102,7 +94,7 @@ async def search_x_for_gems():
                 if engagement < 30:
                     continue
 
-                symbols = re.findall(r"\\$[A-Z]{2,10}", text)
+                symbols = re.findall(r"\$[A-Z]{2,10}", text)
                 cas = re.findall(r"0x[a-fA-F0-9]{40}", text)
                 tweet_url = f"https://x.com/{username}/status/{tweet['id']}"
 
@@ -115,16 +107,17 @@ async def search_x_for_gems():
 
 # --- Telegram Command: /gem ---
 async def gem(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info("Received /gem command")
     try:
         gems = await search_x_for_gems()
+        if not gems:
+            gems = ["No fresh gems from X.com right now."]
         spikes = await detect_volume_spikes()
-
-        message = "\n".join(gems + ["\n📈 Volume Spikes:"] + spikes if spikes else [])
-        await update.message.reply_text(message or "No gems found right now.")
-
+        message = "\n".join(gems + ["\n📈 Volume Spikes:"] + spikes if spikes else gems)
+        await update.message.reply_text(message, disable_web_page_preview=True)
     except Exception as e:
         error_msg = f"⚠️ Error during /gem:\n{e}"
-        print(error_msg)
+        logger.error(error_msg)
         await update.message.reply_text(error_msg)
 
 # --- Telegram Command: /alerts ---
@@ -157,11 +150,11 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/help - Show this help message"
     )
 
-# --- Schedule Volume Spike Alert to Channel ---
+# --- Scheduled Job: Volume Spike Alerts to Channel ---
 async def volume_spike_alert_job(app):
     spikes = await detect_volume_spikes()
     if spikes:
-        await app.bot.send_message(chat_id=CHANNEL_ID, text="\n".join(["📡 Volume Spike Alert"] + spikes))
+        await app.bot.send_message(chat_id=CHANNEL_ID, text="\n".join(["🛁 Volume Spike Alert"] + spikes))
 
 # --- Webhook Entry Point ---
 async def main():
@@ -173,18 +166,15 @@ async def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
 
-    job_queue = app.job_queue
-    job_queue.run_repeating(lambda ctx: volume_spike_alert_job(app), interval=600, first=10)
+    app.job_queue.run_repeating(lambda ctx: volume_spike_alert_job(app), interval=600, first=10)
 
-    # Set the webhook URL with path
     await app.bot.set_webhook(url=WEBHOOK_URL + "/webhook")
-
-    # Run the webhook server at path /webhook
     await app.run_webhook(
-    listen="0.0.0.0",
-    port=int(os.getenv("PORT", 10000)),
-    webhook_url=WEBHOOK_URL + "/webhook"
-)
+        listen="0.0.0.0",
+        port=int(os.getenv("PORT", 10000)),
+        webhook_url=WEBHOOK_URL + "/webhook",
+        url_path="/webhook"
+    )
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
