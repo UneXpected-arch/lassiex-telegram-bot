@@ -102,7 +102,7 @@ async def search_x_for_gems():
                 if engagement < 30:
                     continue
 
-                symbols = re.findall(r"\$[A-Z]{2,10}", text)
+                symbols = re.findall(r"\\$[A-Z]{2,10}", text)
                 cas = re.findall(r"0x[a-fA-F0-9]{40}", text)
                 tweet_url = f"https://x.com/{username}/status/{tweet['id']}"
 
@@ -117,18 +117,15 @@ async def search_x_for_gems():
 async def gem(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         gems = await search_x_for_gems()
-    except Exception as e:
-        await update.message.reply_text(f"Error in gem search: {e}")
-        return
-
-    try:
         spikes = await detect_volume_spikes()
-    except Exception as e:
-        await update.message.reply_text(f"Error in volume check: {e}")
-        return
 
-    message = "\n".join(gems + ["\n📈 Volume Spikes:"] + spikes if spikes else [])
-    await update.message.reply_text(message or "No gems found right now.")
+        message = "\n".join(gems + ["\n📈 Volume Spikes:"] + spikes if spikes else [])
+        await update.message.reply_text(message or "No gems found right now.")
+
+    except Exception as e:
+        error_msg = f"⚠️ Error during /gem:\n{e}"
+        print(error_msg)
+        await update.message.reply_text(error_msg)
 
 # --- Telegram Command: /alerts ---
 async def alerts(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -139,6 +136,26 @@ async def alerts(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def dextools(update: Update, context: ContextTypes.DEFAULT_TYPE):
     pairs = await get_dextools_trending()
     await update.message.reply_text("🔥 Trending Pairs:\n" + "\n".join(pairs))
+
+# --- Telegram Command: /start ---
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "👋 Welcome to LassieX Bot!\n\n"
+        "Use /gem to find fresh gem tokens from X.com\n"
+        "Use /alerts to check real-time volume spikes\n"
+        "Use /dextools for trending crypto pairs\n\n"
+        "Stay degen. Stay early. 🚀"
+    )
+
+# --- Telegram Command: /help ---
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "/gem - Find real-time gem tokens from X.com\n"
+        "/alerts - Show tokens with volume spikes\n"
+        "/dextools - Get trending pairs from DexTools\n"
+        "/start - Welcome message\n"
+        "/help - Show this help message"
+    )
 
 # --- Schedule Volume Spike Alert to Channel ---
 async def volume_spike_alert_job(app):
@@ -169,9 +186,6 @@ async def main():
         webhook_url=WEBHOOK_URL + "/webhook",
         webhook_path="/webhook"  # crucial!
     )
-
-import nest_asyncio
-nest_asyncio.apply()
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
