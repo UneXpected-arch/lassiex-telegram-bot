@@ -153,15 +153,21 @@ async def main():
     app.add_handler(CommandHandler("gem", gem))
     app.add_handler(CommandHandler("alerts", alerts))
     app.add_handler(CommandHandler("dextools", dextools))
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help_command))
 
     job_queue = app.job_queue
     job_queue.run_repeating(lambda ctx: volume_spike_alert_job(app), interval=600, first=10)
 
-    await app.bot.set_webhook(WEBHOOK_URL)
+    # Set the webhook URL with path
+    await app.bot.set_webhook(url=WEBHOOK_URL + "/webhook")
+
+    # Run the webhook server at path /webhook
     await app.run_webhook(
         listen="0.0.0.0",
         port=int(os.getenv("PORT", 10000)),
-        webhook_url=WEBHOOK_URL
+        webhook_url=WEBHOOK_URL + "/webhook",
+        webhook_path="/webhook"  # crucial!
     )
 
 import nest_asyncio
