@@ -169,11 +169,12 @@ async def main():
     app.job_queue.run_repeating(lambda ctx: volume_spike_alert_job(app), interval=600, first=10)
 
     await app.bot.set_webhook(url=WEBHOOK_URL + "/webhook")
+
     await app.run_webhook(
         listen="0.0.0.0",
         port=int(os.getenv("PORT", 10000)),
         webhook_url=WEBHOOK_URL + "/webhook",
-        url_path="/webhook"
+        path="/webhook"  # ✅ Corrected argument
     )
 
 if __name__ == "__main__":
