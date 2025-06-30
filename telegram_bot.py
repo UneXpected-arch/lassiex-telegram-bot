@@ -174,10 +174,11 @@ async def main():
 
     # Run webhook without path argument
     await app.run_webhook(
-        listen="0.0.0.0",
-        port=int(os.getenv("PORT", 10000)),
-        webhook_url=webhook_url_full
-    )
+    listen="0.0.0.0",
+    port=int(os.getenv("PORT", 10000)),
+    webhook_url=WEBHOOK_URL,   # Don't add '/webhook' again
+    url_path="/webhook"        # This must match exactly what Telegram hits
+)
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
