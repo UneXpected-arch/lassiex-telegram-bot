@@ -168,19 +168,13 @@ async def main():
 
     app.job_queue.run_repeating(lambda ctx: volume_spike_alert_job(app), interval=600, first=10)
 
-    # Set webhook with full path
-    webhook_url_full = WEBHOOK_URL + "/webhook"
-    await app.bot.set_webhook(url=webhook_url_full)
-
-    # Run webhook without path argument
     await app.bot.set_webhook(url=WEBHOOK_URL + "/webhook")
-await app.run_webhook(
-    listen="0.0.0.0",
-    port=int(os.getenv("PORT", 10000)),
-    webhook_url=WEBHOOK_URL + "/webhook",
-    url_path="/webhook"
-)
+    await app.run_webhook(
+        listen="0.0.0.0",
+        port=int(os.getenv("PORT", 10000)),
+        webhook_url=WEBHOOK_URL + "/webhook",
+        url_path="/webhook"
+    )
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    asyncio.run(main())
