@@ -30,11 +30,28 @@ logger = logging.getLogger("LassieX")
 # --- Feature: Get Trending Pairs from DexTools ---
 async def get_dextools_trending():
     url = f"{DEXTOOLS_BASE}/api/pairs/trending"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
-            data = await resp.json()
-            trending = data.get("pairs", [])[:5]
-            return [f"{p['baseToken']['symbol']} - {p['url']}" for p in trending if 'url' in p]
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                if resp.status != 200:
+                    logger.error(f"DexTools API returned {resp.status}")
+                    return [f"❌ DexTools API error: {resp.status}"]
+
+                data = await resp.json()
+                trending = data.get("pairs", [])[:5]
+
+                results = []
+                for p in trending:
+                    symbol = p.get("baseToken", {}).get("symbol", "???")
+                    link = p.get("url", None)
+                    if link:
+                        results.append(f"{symbol} - {link}")
+
+                return results or ["⚠️ No trending pairs found."]
+    except Exception as e:
+        logger.exception("DexTools fetch failed")
+        return [f"❌ Error: {e}"]
+
 
 # --- Feature: Get 24h Volume and Compare to 7d Average ---
 async def detect_volume_spikes():
