@@ -196,14 +196,13 @@ async def main():
     app.job_queue.run_repeating(lambda ctx: volume_spike_alert_job(app), interval=600, first=10)
 
     # Set webhook
-    await app.bot.set_webhook(url=WEBHOOK_URL + "/webhook")
-
-    # Start the webhook server
-    await app.run_webhook(
+    await app.bot.set_webhook(url=WEBHOOK_URL)
+await app.run_webhook(
     listen="0.0.0.0",
     port=int(os.getenv("PORT", 10000)),
-    webhook_url=WEBHOOK_URL + "/webhook"
+    webhook_url=WEBHOOK_URL
 )
+
 
 
 if __name__ == "__main__":
