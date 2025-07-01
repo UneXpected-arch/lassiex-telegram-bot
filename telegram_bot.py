@@ -30,6 +30,7 @@ logger.info("📥 /trending command triggered")
 
 # --- Feature: Get Trending Pairs from DexTools ---
 async def trending(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info("📥 /trending command triggered")
     try:
         url = "https://api.coingecko.com/api/v3/search/trending"
         async with aiohttp.ClientSession() as session:
@@ -41,20 +42,22 @@ async def trending(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         coins = data.get("coins", [])
         if not coins:
-            await update.message.reply_text("No trending coins found.")
+            await update.message.reply_text("⚠️ No trending coins found.")
             return
 
-        message = "📈 Trending on CoinGecko:\n"
+        message = "📈 *Trending on CoinGecko:*\n\n"
         for entry in coins[:7]:
-            coin = entry["item"]
+            coin = entry.get("item", {})
             name = coin.get("name", "Unknown")
             symbol = coin.get("symbol", "")
             rank = coin.get("market_cap_rank", "N/A")
-            link = f"https://www.coingecko.com/en/coins/{coin['id']}"
-            message += f"🔹 {name} ({symbol.upper()}) — Rank: {rank}\n{link}\n\n"
+            link = f"https://www.coingecko.com/en/coins/{coin.get('id', '')}"
+            message += f"🔹 *{name}* ({symbol.upper()}) — Rank: {rank}\n🔗 {link}\n\n"
 
-        await update.message.reply_text(message.strip())
+        await update.message.reply_text(message.strip(), parse_mode="Markdown", disable_web_page_preview=True)
+
     except Exception as e:
+        logger.exception("❌ Exception in /trending")
         await update.message.reply_text(f"⚠️ Error in /trending: {e}")
 
 # --- Feature: Get 24h Volume and Compare to 7d Average ---
