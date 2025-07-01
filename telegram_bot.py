@@ -28,29 +28,26 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("LassieX")
 
 # --- Feature: Get Trending Pairs from DexTools ---
-async def get_dextools_trending():
-    url = f"{DEXTOOLS_BASE}/api/pairs/trending"
+async def get_trending_from_geckoterminal():
+    url = "https://api.geckoterminal.com/api/v2/networks/eth/trending_pools"
+
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
                 if resp.status != 200:
-                    logger.error(f"DexTools API returned {resp.status}")
-                    return [f"❌ DexTools API error: {resp.status}"]
-
+                    return [f"❌ GeckoTerminal error: {resp.status}"]
                 data = await resp.json()
-                trending = data.get("pairs", [])[:5]
+                trending = []
 
-                results = []
-                for p in trending:
-                    symbol = p.get("baseToken", {}).get("symbol", "???")
-                    link = p.get("url", None)
-                    if link:
-                        results.append(f"{symbol} - {link}")
-
-                return results or ["⚠️ No trending pairs found."]
+                for item in data.get("data", [])[:5]:
+                    attr = item["attributes"]
+                    symbol = attr["base_token"]["symbol"]
+                    name = attr["base_token"]["name"]
+                    link = f"https://www.geckoterminal.com/eth/pools/{item['id'].split('_')[-1]}"
+                    trending.append(f"🔹 {name} ({symbol}) - [Pool]({link})")
+                return trending or ["❌ No trending tokens found."]
     except Exception as e:
-        logger.exception("DexTools fetch failed")
-        return [f"❌ Error: {e}"]
+        return [f"❌ Error fetching from GeckoTerminal: {e}"]
 
 
 # --- Feature: Get 24h Volume and Compare to 7d Average ---
