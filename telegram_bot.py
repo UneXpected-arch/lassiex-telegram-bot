@@ -184,26 +184,29 @@ async def volume_spike_alert_job(app):
 async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Register all bot commands
+    # Register handlers
     app.add_handler(CommandHandler("gem", gem))
     app.add_handler(CommandHandler("alerts", alerts))
     app.add_handler(CommandHandler("dextools", dextools))
+    app.add_handler(CommandHandler("trending", trending))
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("trending", trending))  # ✅ <-- Add it here
 
-    # Schedule volume alert job
+    # Schedule job
     app.job_queue.run_repeating(lambda ctx: volume_spike_alert_job(app), interval=600, first=10)
 
-    # Set webhook
+    # Set webhook (✅ NO extra "/webhook")
     await app.bot.set_webhook(url=WEBHOOK_URL)
-await app.run_webhook(
-    listen="0.0.0.0",
-    port=int(os.getenv("PORT", 10000)),
-    webhook_url=WEBHOOK_URL
-)
 
+    # Start webhook listener (✅ NO `webhook_path`)
+    await app.run_webhook(
+        listen="0.0.0.0",
+        port=int(os.getenv("PORT", 10000)),
+        webhook_url=WEBHOOK_URL,
+    )
 
-
+# Entry point
 if __name__ == "__main__":
+    import nest_asyncio
+    nest_asyncio.apply()
     asyncio.run(main())
