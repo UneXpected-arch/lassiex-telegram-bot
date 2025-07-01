@@ -28,26 +28,31 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("LassieX")
 
 # --- Feature: Get Trending Pairs from DexTools ---
-async def get_trending_from_geckoterminal():
-    url = "https://api.geckoterminal.com/api/v2/networks/eth/trending_pools"
-
+async def trending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
+        url = "https://www.dextools.io/app/en/trending"
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
                 if resp.status != 200:
-                    return [f"❌ GeckoTerminal error: {resp.status}"]
-                data = await resp.json()
-                trending = []
+                    await update.message.reply_text("❌ Could not fetch trending data from DexTools.")
+                    return
 
-                for item in data.get("data", [])[:5]:
-                    attr = item["attributes"]
-                    symbol = attr["base_token"]["symbol"]
-                    name = attr["base_token"]["name"]
-                    link = f"https://www.geckoterminal.com/eth/pools/{item['id'].split('_')[-1]}"
-                    trending.append(f"🔹 {name} ({symbol}) - [Pool]({link})")
-                return trending or ["❌ No trending tokens found."]
+                html = await resp.text()
+
+        matches = re.findall(r"pair\?chain=(\w+)&address=(0x[a-fA-F0-9]{40})", html)
+        if not matches:
+            await update.message.reply_text("No trending pairs found.")
+            return
+
+        message = "🔥 DexTools Trending Pairs:\n"
+        for chain, address in matches[:5]:
+            link = f"https://www.dextools.io/app/en/{chain}/pair-explorer/{address}"
+            message += f"🔗 {link}\n"
+
+        await update.message.reply_text(message)
+
     except Exception as e:
-        return [f"❌ Error fetching from GeckoTerminal: {e}"]
+        await update.message.reply_text(f"⚠️ Error in /trending: {e}")
 
 
 # --- Feature: Get 24h Volume and Compare to 7d Average ---
