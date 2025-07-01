@@ -26,6 +26,7 @@ VOLUME_SPIKE_THRESHOLD = float(os.getenv("VOLUME_SPIKE_THRESHOLD", 2.5))
 nest_asyncio.apply()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("LassieX")
+logger.info("📥 /trending command triggered")
 
 # --- Feature: Get Trending Pairs from DexTools ---
 async def trending(update: Update, context: ContextTypes.DEFAULT_TYPE):
