@@ -48,15 +48,13 @@ async def trending(update: Update, context: ContextTypes.DEFAULT_TYPE):
             coin = entry["item"]
             name = coin.get("name", "Unknown")
             symbol = coin.get("symbol", "")
-            market_cap_rank = coin.get("market_cap_rank", "N/A")
-            cg_url = f"https://www.coingecko.com/en/coins/{coin['id']}"
-            message += f"🔹 {name} ({symbol.upper()}) — Rank: {market_cap_rank}\n{cg_url}\n\n"
+            rank = coin.get("market_cap_rank", "N/A")
+            link = f"https://www.coingecko.com/en/coins/{coin['id']}"
+            message += f"🔹 {name} ({symbol.upper()}) — Rank: {rank}\n{link}\n\n"
 
         await update.message.reply_text(message.strip())
-
     except Exception as e:
         await update.message.reply_text(f"⚠️ Error in /trending: {e}")
-
 
 # --- Feature: Get 24h Volume and Compare to 7d Average ---
 async def detect_volume_spikes():
