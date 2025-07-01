@@ -200,10 +200,12 @@ async def main():
 
     # Start the webhook server
     await app.run_webhook(
-        listen="0.0.0.0",
-        port=int(os.getenv("PORT", 10000)),
-        webhook_url=WEBHOOK_URL + "/webhook"
-    )
+    listen="0.0.0.0",
+    port=int(os.getenv("PORT", 10000)),
+    webhook_url=WEBHOOK_URL + "/webhook",
+    webhook_path="/webhook"
+)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
