@@ -30,26 +30,29 @@ logger = logging.getLogger("LassieX")
 # --- Feature: Get Trending Pairs from DexTools ---
 async def trending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        url = "https://www.dextools.io/app/en/trending"
+        url = "https://api.coingecko.com/api/v3/search/trending"
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
                 if resp.status != 200:
-                    await update.message.reply_text("❌ Could not fetch trending data from DexTools.")
+                    await update.message.reply_text("❌ Could not fetch trending coins from CoinGecko.")
                     return
+                data = await resp.json()
 
-                html = await resp.text()
-
-        matches = re.findall(r"pair\?chain=(\w+)&address=(0x[a-fA-F0-9]{40})", html)
-        if not matches:
-            await update.message.reply_text("No trending pairs found.")
+        coins = data.get("coins", [])
+        if not coins:
+            await update.message.reply_text("No trending coins found.")
             return
 
-        message = "🔥 DexTools Trending Pairs:\n"
-        for chain, address in matches[:5]:
-            link = f"https://www.dextools.io/app/en/{chain}/pair-explorer/{address}"
-            message += f"🔗 {link}\n"
+        message = "📈 Trending on CoinGecko:\n"
+        for entry in coins[:7]:
+            coin = entry["item"]
+            name = coin.get("name", "Unknown")
+            symbol = coin.get("symbol", "")
+            market_cap_rank = coin.get("market_cap_rank", "N/A")
+            cg_url = f"https://www.coingecko.com/en/coins/{coin['id']}"
+            message += f"🔹 {name} ({symbol.upper()}) — Rank: {market_cap_rank}\n{cg_url}\n\n"
 
-        await update.message.reply_text(message)
+        await update.message.reply_text(message.strip())
 
     except Exception as e:
         await update.message.reply_text(f"⚠️ Error in /trending: {e}")
