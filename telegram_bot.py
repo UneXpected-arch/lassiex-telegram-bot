@@ -174,20 +174,25 @@ async def volume_spike_alert_job(app):
 async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
+    # Register all bot commands
     app.add_handler(CommandHandler("gem", gem))
     app.add_handler(CommandHandler("alerts", alerts))
     app.add_handler(CommandHandler("dextools", dextools))
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("trending", trending))  # ✅ <-- Add it here
 
+    # Schedule volume alert job
     app.job_queue.run_repeating(lambda ctx: volume_spike_alert_job(app), interval=600, first=10)
 
+    # Set webhook
     await app.bot.set_webhook(url=WEBHOOK_URL + "/webhook")
+
+    # Start the webhook server
     await app.run_webhook(
         listen="0.0.0.0",
         port=int(os.getenv("PORT", 10000)),
-        webhook_url=WEBHOOK_URL + "/webhook",
-        url_path="/webhook"
+        webhook_url=WEBHOOK_URL + "/webhook"
     )
 
 if __name__ == "__main__":
